@@ -1,14 +1,10 @@
-# -*- encoding: utf-8 -*-
-from __future__ import unicode_literals
-
 import re
-from unittest import skipUnless
+from io import StringIO
+from unittest import mock, skipUnless
 
 from django.core.management import call_command
 from django.db import connection
-from django.test import TestCase, mock, skipUnlessDBFeature
-from django.utils.encoding import force_text
-from django.utils.six import PY3, StringIO
+from django.test import TestCase, skipUnlessDBFeature
 
 from .models import ColumnTypes
 
@@ -60,7 +56,6 @@ class InspectDBTestCase(TestCase):
         if not connection.features.interprets_empty_strings_as_nulls:
             assertFieldType('char_field', "models.CharField(max_length=10)")
             assertFieldType('null_char_field', "models.CharField(max_length=10, blank=True, null=True)")
-            assertFieldType('comma_separated_int_field', "models.CharField(max_length=99)")
             assertFieldType('email_field', "models.CharField(max_length=254)")
             assertFieldType('file_field', "models.CharField(max_length=100)")
             assertFieldType('file_path_field', "models.CharField(max_length=100)")
@@ -70,9 +65,9 @@ class InspectDBTestCase(TestCase):
         assertFieldType('date_field', "models.DateField()")
         assertFieldType('date_time_field', "models.DateTimeField()")
         if connection.features.can_introspect_ip_address_field:
-            assertFieldType('gen_ip_adress_field', "models.GenericIPAddressField()")
+            assertFieldType('gen_ip_address_field', "models.GenericIPAddressField()")
         elif not connection.features.interprets_empty_strings_as_nulls:
-            assertFieldType('gen_ip_adress_field', "models.CharField(max_length=39)")
+            assertFieldType('gen_ip_address_field', "models.CharField(max_length=39)")
         if connection.features.can_introspect_time_field:
             assertFieldType('time_field', "models.TimeField()")
         if connection.features.has_native_uuid_field:
@@ -200,11 +195,7 @@ class InspectDBTestCase(TestCase):
         self.assertIn("field_field_0 = models.IntegerField(db_column='%s__')" % base_name, output)
         self.assertIn("field_field_1 = models.IntegerField(db_column='__field')", output)
         self.assertIn("prc_x = models.IntegerField(db_column='prc(%) x')", output)
-        if PY3:
-            # Python 3 allows non-ASCII identifiers
-            self.assertIn("tamaño = models.IntegerField()", output)
-        else:
-            self.assertIn("tama_o = models.IntegerField(db_column='tama\\xf1o')", output)
+        self.assertIn("tamaño = models.IntegerField()", output)
 
     def test_table_name_introspection(self):
         """
@@ -272,7 +263,7 @@ class InspectDBTestCase(TestCase):
         with mock.patch('django.db.backends.base.introspection.BaseDatabaseIntrospection.table_names',
                         return_value=['nonexistent']):
             call_command('inspectdb', stdout=out)
-        output = force_text(out.getvalue())
+        output = out.getvalue()
         self.assertIn("# Unable to inspect table 'nonexistent'", output)
         # The error message depends on the backend
         self.assertIn("# The error was:", output)

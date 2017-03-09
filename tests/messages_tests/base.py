@@ -1,12 +1,12 @@
-from django import http
 from django.contrib.messages import constants, get_level, set_level, utils
 from django.contrib.messages.api import MessageFailure
 from django.contrib.messages.constants import DEFAULT_LEVELS
 from django.contrib.messages.storage import base, default_storage
 from django.contrib.messages.storage.base import Message
+from django.http import HttpRequest, HttpResponse
 from django.test import modify_settings, override_settings
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy
+from django.utils.translation import gettext_lazy
 
 
 def add_level_messages(storage):
@@ -24,7 +24,7 @@ def add_level_messages(storage):
 
 class override_settings_tags(override_settings):
     def enable(self):
-        super(override_settings_tags, self).enable()
+        super().enable()
         # LEVEL_TAGS is a constant defined in the
         # django.contrib.messages.storage.base module, so after changing
         # settings.MESSAGE_TAGS, update that constant also.
@@ -32,11 +32,11 @@ class override_settings_tags(override_settings):
         base.LEVEL_TAGS = utils.get_level_tags()
 
     def disable(self):
-        super(override_settings_tags, self).disable()
+        super().disable()
         base.LEVEL_TAGS = self.old_level_tags
 
 
-class BaseTests(object):
+class BaseTests:
     storage_class = default_storage
     levels = {
         'debug': constants.DEBUG,
@@ -70,10 +70,10 @@ class BaseTests(object):
         self.settings_override.disable()
 
     def get_request(self):
-        return http.HttpRequest()
+        return HttpRequest()
 
     def get_response(self):
-        return http.HttpResponse()
+        return HttpResponse()
 
     def get_storage(self, data=None):
         """
@@ -100,7 +100,7 @@ class BaseTests(object):
         storage = self.get_storage()
         response = self.get_response()
 
-        storage.add(constants.INFO, ugettext_lazy('lazy message'))
+        storage.add(constants.INFO, gettext_lazy('lazy message'))
         storage.update(response)
 
         storing = self.stored_messages_count(storage, response)
